@@ -65,7 +65,10 @@ class MockSaga {
       let { value, done } = iterator.next(lastYieldValue);
       if (done) return value;
       const yieldedValue = this.handleYieldPayload(value, iterator);
-      lastYieldValue = await yieldedValue.value;
+      
+      if (yieldedValue.nonBlocking) lastYieldValue = yieldedValue.value;
+      else lastYieldValue = await yieldedValue.value;
+
       if (yieldedValue.suspend) break;
     }
   };
@@ -149,6 +152,29 @@ class MockSaga {
     return {
       value: null,
       suspend: true,
+    };
+  }
+
+  fork(fn, ...args) {
+    const returnValue = fn(...args);
+    if (isPromise(returnValue))
+      return {
+        value: returnValue,
+        suspend: false,
+        nonBlocking: true,
+      };
+
+    if (isGenerator(returnValue))
+      return {
+        value: this.runOrResume(fn, args),
+        suspend: false,
+        nonBlocking: true,
+      };
+
+    return {
+      value: returnValue,
+      suspend: false,
+      nonBlocking: true,
     };
   }
 }

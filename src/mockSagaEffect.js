@@ -12,6 +12,13 @@ export function call(fn, ...args) {
   };
 }
 
+export function fork(fn, ...args) {
+  return {
+    args: [fn, args],
+    handler: 'fork',
+  };
+}
+
 export function put(action) {
   return {
     args: [action],
