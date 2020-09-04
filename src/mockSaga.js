@@ -61,19 +61,33 @@ class MockSaga {
     let iterator = isGeneratorFn(saga) ? saga(...args) : saga;
     let lastYieldValue = initialYieldValue;
 
-    while (true) {
-      let { value, done } = iterator.next(lastYieldValue);
-      if (done) return value;
-      const yieldedValue = this.handleYieldPayload(value, iterator);
-      
-      if (yieldedValue.nonBlocking) lastYieldValue = yieldedValue.value;
-      else lastYieldValue = await yieldedValue.value;
+    try {
+      while (true) {
+        let { value, done } = iterator.next(lastYieldValue);
+        if (done) return value;
+        const yieldedResult = this.handleEffect(value, iterator);
 
-      if (yieldedValue.suspend) break;
+        console.log('yieldedResult', yieldedResult);
+
+        this.handlePromiseError(yieldedResult.value);
+        if (yieldedResult.nonBlocking) lastYieldValue = yieldedResult.value;
+        else lastYieldValue = await yieldedResult.value;
+
+        if (yieldedResult.suspend) break;
+      }
+    } catch (error) {
+      console.log('error', error);
     }
   };
 
-  handleYieldPayload = (payload, saga) => {
+  handlePromiseError(promise) {
+    if (isPromise(promise))
+      promise.catch(error => {
+        console.log('error', error);
+      });
+  }
+
+  handleEffect = (payload, saga) => {
     const { args, handler } = payload;
     return this[handler].apply(this, args.concat(saga));
   };
@@ -176,6 +190,17 @@ class MockSaga {
       suspend: false,
       nonBlocking: true,
     };
+  }
+
+  all(effects, saga) {
+    const allValues = Promise.all(
+      effects.map(effect => {
+        const { value, nonBlocking } = this.handleEffect(effect, saga);
+        if (nonBlocking) return;
+        return value;
+      }),
+    );
+    return { value: allValues };
   }
 }
 

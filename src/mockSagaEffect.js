@@ -39,3 +39,10 @@ export function take(pattern) {
     handler: 'take',
   };
 }
+
+export function all(effects) {
+  return {
+    args: [effects],
+    handler: 'all',
+  };
+}

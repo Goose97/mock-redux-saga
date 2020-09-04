@@ -1,25 +1,16 @@
-import { takeEvery, call, put, take, fork } from './mockSagaEffect';
-// import { takeEvery, call, put, take, fork } from 'redux-saga/effects';
+import { takeEvery, call, put, take, fork, all } from './mockSagaEffect';
+// import { takeEvery, call, put, take, fork, all } from 'redux-saga/effects';
 
 async function fakeApiCall(timeout) {
-  console.log('heello');
   await new Promise(resolve => {
     setTimeout(() => resolve(timeout), timeout);
-  }).then(() => console.log('promise settled'));
-  console.log('heello1');
+  }).then(() => {
+    console.log('promise settled');
+  });
 }
 
 function* testCall(action) {
-  const apiReponse = yield fork(fakeApiCall, 2000);
-  const apiReponse1 = yield fork(fakeApiCall, 4000);
-  console.log('apiReponse', apiReponse);
-  console.log('apiReponse1', apiReponse1);
-  // if (apiReponse === 99)
-  //   yield put({
-  //     type: 'DECREMENT',
-  //   });
-
-  console.log('mami');
+  yield all([call(fakeApiCall, 1000), call(fakeApiCall, 2000)]);
 }
 
 function* testTake(action) {
